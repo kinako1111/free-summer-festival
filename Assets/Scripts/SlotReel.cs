@@ -1,71 +1,110 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class SlotReel : MonoBehaviour
 {
-	[Header("リール上に表示されるImageコンポーネント（上→下）")]
-	public List<Image> slots; 
+	[Header("リールのシンボル親")]
+	public Transform reelTransform;
 
-	[Header("シンボル一覧")]
-	public List<Symbol> symbolList;
+	[Header("絵柄の管理クラス")]
+	public SymbolManager symbolManager;
 
-	[Header("スピン設定")]
-	public float spinDuration = 2f;     // リールの回転時間
-	public float spinInterval = 0.05f;  // 回転の速さ（短いほど速い）
+	[Header("リール構成")]
+	public int visibleCount = 3;          // 表示する絵柄数
+	public float symbolHeight = 1.5f;     // 1個分の高さ
 
+	private float spinSpeed = 20f;        // 共通スピード（symbols/秒）
+	private float spinDuration = 2f;      // このリールの回転時間
 	private bool isSpinning = false;
+	private List<GameObject> symbols = new List<GameObject>();
 
 	void Start()
 	{
-		InitSymbols();
+		InitReel();
 	}
 
-	void InitSymbols()
+	public void SetSpinSettings(float speed, float duration)
 	{
-		foreach (var slot in slots)
+		spinSpeed = speed;
+		spinDuration = duration;
+	}
+
+	void InitReel()
+	{
+		ClearSymbols();
+		for (int i = 0; i < visibleCount; i++)
 		{
-			slot.sprite = GetRandomSymbol().sprite;
+			SpawnSymbolAt(i);
 		}
+	}
+
+	void ClearSymbols()
+	{
+		foreach (var obj in symbols)
+		{
+			Destroy(obj);
+		}
+		symbols.Clear();
+	}
+
+	void SpawnSymbolAt(int index)
+	{
+		GameObject go = Instantiate(symbolManager.GetRandomSymbol(), reelTransform);
+		go.transform.localPosition = new Vector3(0, -index * symbolHeight, 0);
+		symbols.Add(go);
 	}
 
 	public void StartSpin()
 	{
 		if (!isSpinning)
-		StartCoroutine(SpinRoutine());
+			StartCoroutine(SpinRoutine());
 	}
 
 	IEnumerator SpinRoutine()
 	{
 		isSpinning = true;
-		float timer = 0f;
 
-		while (timer < spinDuration)
+		float elapsed = 0f;
+		float interval = 1f / spinSpeed;
+
+		while (elapsed < spinDuration)
 		{
-			foreach (var slot in slots)
+			if (symbols.Count > 0)
 			{
-				Symbol symbol = GetRandomSymbol();
-				slot.sprite = symbol.sprite;
+				Destroy(symbols[symbols.Count - 1]);
+				symbols.RemoveAt(symbols.Count - 1);
 			}
 
-			timer += spinInterval;
-			yield return new WaitForSeconds(spinInterval);
+			GameObject newSymbol = Instantiate(symbolManager.GetRandomSymbol(), reelTransform);
+			newSymbol.transform.localPosition = new Vector3(0, symbolHeight, 0);
+
+			foreach (var symbol in symbols)
+			{
+				symbol.transform.localPosition -= new Vector3(0, symbolHeight, 0);
+			}
+
+			symbols.Insert(0, newSymbol);
+
+			elapsed += interval;
+			yield return new WaitForSeconds(interval);
 		}
 
-		// 最終停止時のシンボル
-		foreach (var slot in slots)
+		while (symbols.Count > visibleCount)
 		{
-			Symbol symbol = GetRandomSymbol();
-			slot.sprite = symbol.sprite;
+			Destroy(symbols[symbols.Count - 1]);
+			symbols.RemoveAt(symbols.Count - 1);
+		}
+
+		for (int i = 0; i < symbols.Count; i++)
+		{
+			symbols[i].transform.localPosition = new Vector3(0, -i * symbolHeight, 0);
 		}
 
 		isSpinning = false;
+
+		// 警告回避用
+		yield break;
 	}
 
-	Symbol GetRandomSymbol()
-	{
-		int index = Random.Range(0, symbolList.Count);
-		return symbolList[index];
-	}
 }

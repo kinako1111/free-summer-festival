@@ -3,12 +3,11 @@ using UnityEngine;
 
 public class SlotController : MonoBehaviour
 {
-	[Header("スロットのリール")]
-	public List<SlotReel> slotReels;
+	public List<SlotReel> reels;
 
 	public void SpinAll()
 	{
-		foreach (SlotReel reel in slotReels)
+		foreach (SlotReel reel in reels)
 		{
 			reel.StartSpin();
 		}
