@@ -11,11 +11,13 @@ public class SlotReel : MonoBehaviour
 	public SymbolManager symbolManager;
 
 	[Header("リール構成")]
-	public int visibleCount = 3;          // 表示する絵柄数
-	public float symbolHeight = 1.5f;     // 1個分の高さ
+	public float symbolHeight = 1.5f;
 
-	private float spinSpeed = 20f;        // 共通スピード（symbols/秒）
-	private float spinDuration = 2f;      // このリールの回転時間
+	[Header("回転設定")]
+	public float spinSpeed = 20f;
+	public float spinDuration = 2f; // ← public化して他から参照可能に
+
+	private int visibleCount = 1;
 	private bool isSpinning = false;
 	private List<GameObject> symbols = new List<GameObject>();
 
@@ -30,7 +32,7 @@ public class SlotReel : MonoBehaviour
 		spinDuration = duration;
 	}
 
-	void InitReel()
+	public void InitReel()
 	{
 		ClearSymbols();
 		for (int i = 0; i < visibleCount; i++)
@@ -39,7 +41,7 @@ public class SlotReel : MonoBehaviour
 		}
 	}
 
-	void ClearSymbols()
+	public void ClearSymbols()
 	{
 		foreach (var obj in symbols)
 		{
@@ -48,20 +50,27 @@ public class SlotReel : MonoBehaviour
 		symbols.Clear();
 	}
 
-	void SpawnSymbolAt(int index)
+	public void SpawnSymbolAt(int index)
 	{
 		GameObject go = Instantiate(symbolManager.GetRandomSymbol(), reelTransform);
 		go.transform.localPosition = new Vector3(0, -index * symbolHeight, 0);
 		symbols.Add(go);
 	}
 
-	public void StartSpin()
+	public void StartSpinning()
 	{
 		if (!isSpinning)
 			StartCoroutine(SpinRoutine());
 	}
 
-	IEnumerator SpinRoutine()
+	public void StartSpin() // 呼び出し側で柔軟に使えるようエイリアス
+	{
+		StartSpinning();
+	}
+
+	public bool IsSpinning => isSpinning;
+
+	private IEnumerator SpinRoutine()
 	{
 		isSpinning = true;
 
@@ -77,14 +86,12 @@ public class SlotReel : MonoBehaviour
 			}
 
 			GameObject newSymbol = Instantiate(symbolManager.GetRandomSymbol(), reelTransform);
-			newSymbol.transform.localPosition = new Vector3(0, symbolHeight, 0);
-
-			foreach (var symbol in symbols)
-			{
-				symbol.transform.localPosition -= new Vector3(0, symbolHeight, 0);
-			}
-
 			symbols.Insert(0, newSymbol);
+
+			for (int i = 0; i < symbols.Count; i++)
+			{
+				symbols[i].transform.localPosition = new Vector3(0, -i * symbolHeight, 0);
+			}
 
 			elapsed += interval;
 			yield return new WaitForSeconds(interval);
@@ -102,9 +109,5 @@ public class SlotReel : MonoBehaviour
 		}
 
 		isSpinning = false;
-
-		// 警告回避用
-		yield break;
 	}
-
 }

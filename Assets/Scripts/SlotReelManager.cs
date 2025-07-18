@@ -4,27 +4,43 @@ using UnityEngine;
 
 public class SlotReelManager : MonoBehaviour
 {
-	[Header("全体設定")]
-	public float spinSpeed = 20f;          // 共通回転スピード（symbols/秒）
-	public float minSpinTime = 2f;         // 最短スピン時間
-	public float maxSpinTime = 3.5f;       // 最長スピン時間
-
-	[Header("対象リール一覧")]
 	public List<SlotReel> reels;
+
+	[Header("共通スピン設定")]
+	public float spinSpeed = 20f;
+	public float spinDuration = 2f;
+	public float reelSpinDelay = 0.3f;
 
 	void Start()
 	{
-		StartCoroutine(SpinAllReelsWithDelay());
+		foreach (SlotReel reel in reels)
+		{
+			reel.SetSpinSettings(spinSpeed, spinDuration);
+			reel.InitReel(); // ← 各リールで3個ずつのみ生成される
+		}
 	}
 
-	IEnumerator SpinAllReelsWithDelay()
+	public void SpinAllReels()
 	{
-		foreach (var reel in reels)
+		StartCoroutine(SpinReelsCoroutine());
+	}
+
+	IEnumerator SpinReelsCoroutine()
+	{
+		foreach (SlotReel reel in reels)
 		{
-			float randomDuration = Random.Range(minSpinTime, maxSpinTime);
-			reel.SetSpinSettings(spinSpeed, randomDuration);
 			reel.StartSpin();
-			yield return new WaitForSeconds(0.3f); // ずらしてスタート
+			yield return new WaitForSeconds(reelSpinDelay);
 		}
+	}
+
+	public bool AreAllReelsStopped()
+	{
+		foreach (SlotReel reel in reels)
+		{
+			if (reel.IsSpinning)
+				return false;
+		}
+		return true;
 	}
 }
