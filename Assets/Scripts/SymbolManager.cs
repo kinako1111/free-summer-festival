@@ -1,48 +1,63 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class SymbolPrefab
+public class SymbolData
 {
-	public string name;             // ƒVƒ“ƒ{ƒ‹‚Ì–¼‘O
-	public GameObject prefab;       // ‘Î‰‚·‚éPrefab
+	public GameObject symbolPrefab; // å‡ºç¾ã•ã›ã‚‹ã‚·ãƒ³ãƒœãƒ«ï¼ˆGameObjectï¼‰
+	[Range(0f, 1f)] public float probability; // å‡ºç¾ç¢ºç‡ï¼ˆ0ã€œ1ã®ç¯„å›²ï¼‰
 }
 
 public class SymbolManager : MonoBehaviour
 {
-	[Header("g—p‚·‚éƒVƒ“ƒ{ƒ‹ˆê——")]
-	public List<SymbolPrefab> symbolPrefabs;
+	[Header("å‡ºç¾ã•ã›ãŸã„ã‚·ãƒ³ãƒœãƒ«ã¨ç¢ºç‡")]
+	public List<SymbolData> symbols = new List<SymbolData>();
 
-	// ƒ‰ƒ“ƒ_ƒ€‚ÉƒVƒ“ƒ{ƒ‹‚ÌPrefab‚ğ•Ô‚·
+	// ã‚·ãƒ³ãƒœãƒ«ã‚’ãƒ©ãƒ³ãƒ€ãƒ ã§1ã¤è¿”ã™ï¼ˆç¢ºç‡ã«å¿œã˜ã¦ï¼‰
 	public GameObject GetRandomSymbol()
 	{
-		int index = Random.Range(0, symbolPrefabs.Count);
-		return symbolPrefabs[index].prefab;
+		float total = 0f;
+
+		foreach (var symbol in symbols)
+		{
+			total += symbol.probability;
+		}
+
+		if (total <= 0f)
+		{
+			Debug.LogWarning("SymbolManager: åˆè¨ˆç¢ºç‡ãŒ0ä»¥ä¸‹ã§ã™");
+			return null;
+		}
+
+		float rand = Random.Range(0f, total);
+		float cumulative = 0f;
+
+		foreach (var symbol in symbols)
+		{
+			cumulative += symbol.probability;
+			if (rand <= cumulative)
+			{
+				return symbol.symbolPrefab;
+			}
+		}
+
+		// å¿µã®ãŸã‚
+		return symbols[symbols.Count - 1].symbolPrefab;
 	}
 
-	// –¼‘O‚©‚çPrefab‚ğæ“¾
-	public GameObject GetSymbolByName(string symbolName)
+	// ç™»éŒ²ã•ã‚ŒãŸã‚·ãƒ³ãƒœãƒ«æ•°ã‚’è¿”ã™ï¼ˆSlotReelãªã©ã‹ã‚‰ä½¿ã†ç”¨ï¼‰
+	public int GetSymbolCount()
 	{
-		foreach (var symbol in symbolPrefabs)
+		return symbols.Count;
+	}
+
+	// ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã§æŒ‡å®šã—ãŸã‚·ãƒ³ãƒœãƒ«ã‚’è¿”ã™
+	public GameObject GetSymbolByIndex(int index)
+	{
+		if (index >= 0 && index < symbols.Count)
 		{
-			if (symbol.name == symbolName)
-			{
-				return symbol.prefab;
-			}
+			return symbols[index].symbolPrefab;
 		}
 		return null;
-	}
-
-	// –¼‘O‚©‚çƒCƒ“ƒfƒbƒNƒX‚ğæ“¾i”CˆÓ’Ç‰Áj
-	public int GetSymbolIndexByName(string symbolName)
-	{
-		for (int i = 0; i < symbolPrefabs.Count; i++)
-		{
-			if (symbolPrefabs[i].name == symbolName)
-			{
-				return i;
-			}
-		}
-		return -1; // Œ©‚Â‚©‚ç‚È‚¯‚ê‚Î -1
 	}
 }
