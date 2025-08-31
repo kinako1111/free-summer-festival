@@ -15,8 +15,7 @@ public class SlotReel : MonoBehaviour
 
 	[Header("‰ñ“]İ’è")]
 	public float spinSpeed = 20f;
-	public float spinDuration = 2f; // © public‰»‚µ‚Ä‘¼‚©‚çQÆ‰Â”\‚É
-
+	public float spinDuration = 2f;
 	private int visibleCount = 1;
 	private bool isSpinning = false;
 	private List<GameObject> symbols = new List<GameObject>();

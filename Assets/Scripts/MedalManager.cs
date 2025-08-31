@@ -1,26 +1,45 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using TMPro;
 
 public class MedalManager : MonoBehaviour
 {
-    [SerializeField] int startMedals = 1000;  // Å‰‚ÌŠƒƒ_ƒ‹
-    [SerializeField] int currentBet = 10;     // ‰ŠúBET”
-    [SerializeField] TextMeshProUGUI medalText; // Šƒƒ_ƒ‹•\¦
-    [SerializeField] TextMeshProUGUI betText;   // BET•\¦
+    [Header("åˆæœŸè¨­å®š")]
+    [SerializeField] int startMedals = 1000;   // æœ€åˆã®æ‰€æŒãƒ¡ãƒ€ãƒ«
+    [SerializeField] int minBet = 1;           // æœ€ä½BETæšæ•°
+    [SerializeField] int maxBet = 10;          // æœ€å¤§BETæšæ•°
+
+    [Header("UIå‚ç…§")]
+    [SerializeField] TextMeshProUGUI medalText; // æ‰€æŒãƒ¡ãƒ€ãƒ«è¡¨ç¤ºç”¨
+    [SerializeField] TextMeshProUGUI betText;   // BETæšæ•°è¡¨ç¤ºç”¨
+
     private int currentMedals;
+    private int currentBet;
 
     private void Start()
     {
-        // ƒQ[ƒ€ŠJn‚Ìƒƒ_ƒ‹‰Šú‰»
         currentMedals = startMedals;
-        UpdateUI();
-    }
-    public void AddMedals(int amount)
-    {
-        currentMedals += amount;
+
+        // --- å‰å›ã®BETæšæ•°ã‚’ãƒ­ãƒ¼ãƒ‰ ---
+        currentBet = PlayerPrefs.GetInt("LastBet", minBet);
+
+        //z BET ãŒç¯„å›²å¤–ãªã‚‰ãƒªã‚»ãƒƒãƒˆ
+        if (currentBet < minBet || currentBet > maxBet)
+        {
+            currentBet = minBet;
+        }
+
         UpdateUI();
     }
 
+    // --- ãƒ¡ãƒ€ãƒ«ã‚’å¢—ã‚„ã™ï¼ˆå½“ãŸã‚Šç™ºç”Ÿæ™‚ï¼‰ ---
+    public void AddMedals(int basePayout)
+    {
+        int payout = basePayout * currentBet;
+        currentMedals += payout;
+        UpdateUI();
+    }
+
+    // --- ã‚¹ãƒ”ãƒ³æ™‚ã«BETåˆ†ã®ãƒ¡ãƒ€ãƒ«ã‚’æ¶ˆè²» ---
     public bool SpendMedals()
     {
         if (currentMedals >= currentBet)
@@ -31,41 +50,34 @@ public class MedalManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("ƒƒ_ƒ‹‚ª‘«‚è‚Ü‚¹‚ñI");
+            Debug.Log("ãƒ¡ãƒ€ãƒ«ãŒè¶³ã‚Šã¾ã›ã‚“ï¼");
             return false;
         }
     }
 
-    // --- BET–‡”‚ğƒZƒbƒg ---
-    public void SetBet(int amount)
+    // --- BETãƒœã‚¿ãƒ³ï¼ˆæŠ¼ã™ãŸã³ã«+1ã€æœ€å¤§ã§ãƒ«ãƒ¼ãƒ—ï¼‰ ---
+    public void OnBet()
     {
-        currentBet = amount;
+        currentBet++;
+
+        if (currentBet > maxBet)
+            currentBet = minBet;
+
+        PlayerPrefs.SetInt("LastBet", currentBet);
+        PlayerPrefs.Save();
+
         UpdateUI();
     }
 
-    // --- ¡‚ÌŠƒƒ_ƒ‹‚ğ•Ô‚· ---
-    public int GetCurrentMedals()
-    {
-        return currentMedals;
-    }
+    public int GetCurrentMedals() => currentMedals;
+    public int GetCurrentBet() => currentBet;
 
-    // --- ¡‚ÌBET”‚ğ•Ô‚· ---
-    public int GetCurrentBet()
-    {
-        return currentBet;
-    }
-
-    // --- UI‚ğXV ---
     private void UpdateUI()
     {
         if (medalText != null)
-        {
-            medalText.text = $"Šƒƒ_ƒ‹: {currentMedals}";
-        }
+            medalText.text = $"æ‰€æŒãƒ¡ãƒ€ãƒ«: {currentMedals}";
 
         if (betText != null)
-        {
             betText.text = $"BET: {currentBet}";
-        }
     }
 }
