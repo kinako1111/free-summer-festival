@@ -1,24 +1,34 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class SlotReel : MonoBehaviour
 {
-	[Header("���[���̃V���{���e")]
+	[Header("リールのシンボル親")]
 	public Transform reelTransform;
 
-	[Header("�G���̊Ǘ��N���X")]
+	[Header("絵柄の管理クラス")]
 	public SymbolManager symbolManager;
 
-	[Header("���[���\��")]
+	[Header("リール構成")]
 	public float symbolHeight = 1.5f;
+	public int visibleCount = 1; // 表示は1つだけ
 
-	[Header("��]�ݒ�")]
+	[Header("回転設定")]
 	public float spinSpeed = 20f;
 	public float spinDuration = 2f;
-	private int visibleCount = 1;
+
+	[Header("停止時に光らせるフレーム")]
+	public Transform frameTransform;       // Inspectorでフレームをアタッチ
+	public ParticleSystem hitEffect;       // Inspectorでパーティクルをアタッチ
+
 	private bool isSpinning = false;
-	private List<GameObject> symbols = new List<GameObject>();
+	private GameObject currentSymbolGO;
+	private SymbolInstance currentSymbol;
+
+	private List<SymbolData> stoppedSymbols = new List<SymbolData>(); // 停止履歴
+
+	public bool IsSpinning => isSpinning;
 
 	void Start()
 	{
@@ -33,80 +43,70 @@ public class SlotReel : MonoBehaviour
 
 	public void InitReel()
 	{
-		ClearSymbols();
-		for (int i = 0; i < visibleCount; i++)
-		{
-			SpawnSymbolAt(i);
-		}
+		SpawnSymbol();
 	}
 
-	public void ClearSymbols()
+	private void SpawnSymbol()
 	{
-		foreach (var obj in symbols)
-		{
-			Destroy(obj);
-		}
-		symbols.Clear();
+		SymbolData data = symbolManager.GetRandomSymbolData();
+		if (data.symbolPrefab == null) return;
+
+		if (currentSymbolGO != null)
+			Destroy(currentSymbolGO);
+
+		currentSymbolGO = Instantiate(data.symbolPrefab, reelTransform);
+		currentSymbolGO.transform.localPosition = Vector3.zero;
+
+		currentSymbol = currentSymbolGO.AddComponent<SymbolInstance>();
+		currentSymbol.data = data;
 	}
 
-	public void SpawnSymbolAt(int index)
-	{
-		GameObject go = Instantiate(symbolManager.GetRandomSymbol(), reelTransform);
-		go.transform.localPosition = new Vector3(0, -index * symbolHeight, 0);
-		symbols.Add(go);
-	}
-
-	public void StartSpinning()
+	public void StartSpin()
 	{
 		if (!isSpinning)
 			StartCoroutine(SpinRoutine());
 	}
 
-	public void StartSpin() // �Ăяo�����ŏ_��Ɏg����悤�G�C���A�X
-	{
-		StartSpinning();
-	}
-
-	public bool IsSpinning => isSpinning;
-
 	private IEnumerator SpinRoutine()
 	{
 		isSpinning = true;
-
 		float elapsed = 0f;
 		float interval = 1f / spinSpeed;
 
 		while (elapsed < spinDuration)
 		{
-			if (symbols.Count > 0)
-			{
-				Destroy(symbols[symbols.Count - 1]);
-				symbols.RemoveAt(symbols.Count - 1);
-			}
-
-			GameObject newSymbol = Instantiate(symbolManager.GetRandomSymbol(), reelTransform);
-			symbols.Insert(0, newSymbol);
-
-			for (int i = 0; i < symbols.Count; i++)
-			{
-				symbols[i].transform.localPosition = new Vector3(0, -i * symbolHeight, 0);
-			}
-
+			SpawnSymbol();
 			elapsed += interval;
 			yield return new WaitForSeconds(interval);
 		}
 
-		while (symbols.Count > visibleCount)
-		{
-			Destroy(symbols[symbols.Count - 1]);
-			symbols.RemoveAt(symbols.Count - 1);
-		}
-
-		for (int i = 0; i < symbols.Count; i++)
-		{
-			symbols[i].transform.localPosition = new Vector3(0, -i * symbolHeight, 0);
-		}
+		// 停止時のシンボルを履歴に追加
+		stoppedSymbols.Insert(0, currentSymbol.data);
 
 		isSpinning = false;
+	}
+
+	public List<SymbolData> GetLastNSymbols(int n)
+	{
+		int count = Mathf.Min(n, stoppedSymbols.Count);
+		return stoppedSymbols.GetRange(0, count);
+	}
+
+	// --- パーティクル演出 ---
+	public void PlayHitEffect()
+	{
+		if (hitEffect != null && frameTransform != null)
+		{
+			hitEffect.transform.position = frameTransform.position;
+			hitEffect.Play();
+		}
+	}
+	public void PlayHitEffectAtPosition(Vector3 pos)
+	{
+		if (hitEffect != null)
+		{
+			hitEffect.transform.position = pos;
+			hitEffect.Play();
+		}
 	}
 }

@@ -1,31 +1,20 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class SlotReelManager : MonoBehaviour
 {
 	public List<SlotReel> reels;
-
-	[Header("‹¤’ÊƒXƒsƒ“İ’è")]
 	public float spinSpeed = 20f;
 	public float spinDuration = 2f;
 	public float reelSpinDelay = 0.3f;
-
-	void Start()
-	{
-		foreach (SlotReel reel in reels)
-		{
-			reel.SetSpinSettings(spinSpeed, spinDuration);
-			reel.InitReel(); // © ŠeƒŠ[ƒ‹‚Å3ŒÂ‚¸‚Â‚Ì‚İ¶¬‚³‚ê‚é
-		}
-	}
 
 	public void SpinAllReels()
 	{
 		StartCoroutine(SpinReelsCoroutine());
 	}
 
-	IEnumerator SpinReelsCoroutine()
+	private IEnumerator SpinReelsCoroutine()
 	{
 		foreach (SlotReel reel in reels)
 		{
@@ -36,11 +25,25 @@ public class SlotReelManager : MonoBehaviour
 
 	public bool AreAllReelsStopped()
 	{
-		foreach (SlotReel reel in reels)
-		{
-			if (reel.IsSpinning)
-				return false;
-		}
+		foreach (var reel in reels)
+			if (reel.IsSpinning) return false;
 		return true;
+	}
+
+	// åœæ­¢å±¥æ­´ã‹ã‚‰3Ã—3ã‚°ãƒªãƒƒãƒ‰ä½œæˆ
+	public SymbolData[,] GetStoppedGrid()
+	{
+		int rows = 3;
+		int cols = reels.Count;
+		SymbolData[,] grid = new SymbolData[rows, cols];
+
+		for (int c = 0; c < cols; c++)
+		{
+			List<SymbolData> last = reels[c].GetLastNSymbols(rows);
+			for (int r = 0; r < rows; r++)
+				grid[r, c] = (r < last.Count) ? last[r] : new SymbolData { type = SymbolType.None };
+		}
+
+		return grid;
 	}
 }
