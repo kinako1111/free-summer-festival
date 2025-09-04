@@ -3,14 +3,12 @@ using TMPro;
 
 public class MedalManager : MonoBehaviour
 {
-	[Header("初期設定")]
 	[SerializeField] int startMedals = 1000;   // 最初の所持メダル
 	[SerializeField] int minBet = 1;           // 最低BET枚数
 	[SerializeField] int maxBet = 10;          // 最大BET枚数
-
-	[Header("UI参照")]
 	[SerializeField] TextMeshProUGUI medalText; // 所持メダル表示用
 	[SerializeField] TextMeshProUGUI betText;   // BET枚数表示用
+	[SerializeField] private AudioManager audioManager;
 
 	private int currentMedals;
 	private int currentBet;
@@ -19,9 +17,8 @@ public class MedalManager : MonoBehaviour
 	{
 		currentMedals = startMedals;
 
-		// 前回のBET枚数をロード（なければminBet）
+		// 前回のBET枚数をロード
 		currentBet = PlayerPrefs.GetInt("LastBet", minBet);
-
 		UpdateUI();
 	}
 
@@ -44,7 +41,7 @@ public class MedalManager : MonoBehaviour
 		}
 		else
 		{
-			Debug.Log("メダルが足りません！");
+			Debug.Log("メダルが足りない！");
 			return false;
 		}
 	}
@@ -61,10 +58,21 @@ public class MedalManager : MonoBehaviour
 		PlayerPrefs.Save();
 
 		UpdateUI();
+
+		// SE再生（Bet）
+		if (audioManager != null)
+			audioManager.PlayBetSE();
 	}
 
-	public int GetCurrentMedals() => currentMedals;
-	public int GetCurrentBet() => currentBet;
+	public int GetCurrentMedals()
+	{
+		return currentMedals;
+	}
+
+	public int GetCurrentBet()
+	{
+		return currentBet;
+	}
 
 	private void UpdateUI()
 	{

@@ -4,30 +4,18 @@ using UnityEngine;
 
 public class SlotReel : MonoBehaviour
 {
-	[Header("リールのシンボル親")]
-	public Transform reelTransform;
+	[SerializeField] float spinSpeed = 20f;        // スピン速度
+	[SerializeField] float spinDuration = 2f;      // スピンの継続時間（秒）
+	[SerializeField] Transform reelTransform;
+	[SerializeField] SymbolManager symbolManager;
 
-	[Header("絵柄の管理クラス")]
-	public SymbolManager symbolManager;
+	private bool isSpinning = false;              
+	private GameObject currentSymbolGO;           
+	private SymbolInstance currentSymbol;          
 
-	[Header("リール構成")]
-	public float symbolHeight = 1.5f;
-	public int visibleCount = 1; // 表示は1つだけ
+	private List<SymbolData> stoppedSymbols = new List<SymbolData>(); // 停止したシンボルの履歴
 
-	[Header("回転設定")]
-	public float spinSpeed = 20f;
-	public float spinDuration = 2f;
-
-	[Header("停止時に光らせるフレーム")]
-	public Transform frameTransform;       // Inspectorでフレームをアタッチ
-	public ParticleSystem hitEffect;       // Inspectorでパーティクルをアタッチ
-
-	private bool isSpinning = false;
-	private GameObject currentSymbolGO;
-	private SymbolInstance currentSymbol;
-
-	private List<SymbolData> stoppedSymbols = new List<SymbolData>(); // 停止履歴
-
+	// リールが回転中かどうかを外部から参照するプロパティ
 	public bool IsSpinning => isSpinning;
 
 	void Start()
@@ -41,11 +29,27 @@ public class SlotReel : MonoBehaviour
 		spinDuration = duration;
 	}
 
+	// リールを初期化
 	public void InitReel()
 	{
 		SpawnSymbol();
 	}
 
+	// リールの回転を開始する
+	public void StartSpin()
+	{
+		if (!isSpinning)
+			StartCoroutine(SpinRoutine());
+	}
+
+	// 停止履歴から指定数だけシンボルを取得
+	public List<SymbolData> GetLastNSymbols(int n)
+	{
+		int count = Mathf.Min(n, stoppedSymbols.Count);
+		return stoppedSymbols.GetRange(0, count);
+	}
+
+	// シンボルをランダムに生成して配置
 	private void SpawnSymbol()
 	{
 		SymbolData data = symbolManager.GetRandomSymbolData();
@@ -61,18 +65,13 @@ public class SlotReel : MonoBehaviour
 		currentSymbol.data = data;
 	}
 
-	public void StartSpin()
-	{
-		if (!isSpinning)
-			StartCoroutine(SpinRoutine());
-	}
-
 	private IEnumerator SpinRoutine()
 	{
 		isSpinning = true;
 		float elapsed = 0f;
-		float interval = 1f / spinSpeed;
+		float interval = 1f / spinSpeed; 
 
+		// 一定時間ランダムにシンボルを切り替える
 		while (elapsed < spinDuration)
 		{
 			SpawnSymbol();
@@ -80,33 +79,9 @@ public class SlotReel : MonoBehaviour
 			yield return new WaitForSeconds(interval);
 		}
 
-		// 停止時のシンボルを履歴に追加
+		// 最終的に止まったシンボルを履歴に保存
 		stoppedSymbols.Insert(0, currentSymbol.data);
 
 		isSpinning = false;
-	}
-
-	public List<SymbolData> GetLastNSymbols(int n)
-	{
-		int count = Mathf.Min(n, stoppedSymbols.Count);
-		return stoppedSymbols.GetRange(0, count);
-	}
-
-	// --- パーティクル演出 ---
-	public void PlayHitEffect()
-	{
-		if (hitEffect != null && frameTransform != null)
-		{
-			hitEffect.transform.position = frameTransform.position;
-			hitEffect.Play();
-		}
-	}
-	public void PlayHitEffectAtPosition(Vector3 pos)
-	{
-		if (hitEffect != null)
-		{
-			hitEffect.transform.position = pos;
-			hitEffect.Play();
-		}
 	}
 }
